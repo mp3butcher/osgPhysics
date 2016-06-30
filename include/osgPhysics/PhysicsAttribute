@@ -1,0 +1,89 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_PHYSICSATTRIBUTE
+#define OSGPHYSICS_PHYSICSATTRIBUTE 1
+
+#include <osg/io_utils>
+#include <osgPhysics/Export>
+#include <sstream>
+
+namespace osgPhysics {
+
+#define COMMON_ATTRIBUTE_FUNCS( FUNC, NAME, TYPE ) \
+    void set##FUNC ( const TYPE& value ) { setAttribute(#NAME, value); } \
+    bool get##FUNC ( TYPE& value ) { return getAttribute(#NAME, value); }
+
+/** The physics attribute map */
+class OSGPHYSICS_EXPORT PhysicsAttribute : public osg::Object
+{
+public:
+    PhysicsAttribute();
+    PhysicsAttribute( const PhysicsAttribute& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, PhysicsAttribute );
+    
+    template<typename T>
+    void setAttribute( const std::string& name, const T& value )
+    {
+        std::stringstream ss; ss << value;
+        _attributeMap[name] = ss.str();
+    }
+    
+    void setAttribute( const std::string& name, const osg::Matrixd& value );
+    void setAttribute( const std::string& name, const osg::Matrixf& value );
+    
+    template<typename T>
+    bool getAttribute( const std::string& name, T& value ) const
+    {
+        AttributeMap::const_iterator itr = _attributeMap.find(name);
+        if ( itr==_attributeMap.end() ) return false;
+        
+        std::stringstream ss(itr->second); ss >> value;
+        return true;
+    }
+    
+    bool getAttribute( const std::string& name, osg::Matrixd& value ) const;
+    bool getAttribute( const std::string& name, osg::Matrixf& value ) const;
+    
+    typedef std::map<std::string, std::string> AttributeMap;
+    const AttributeMap& getAttributeMap() const { return _attributeMap; }
+    
+protected:
+    virtual ~PhysicsAttribute();
+    
+    AttributeMap _attributeMap;
+};
+
+/** The body (rigid etc.) attribute map */
+class OSGPHYSICS_EXPORT BodyAttribute : public PhysicsAttribute
+{
+public:
+    COMMON_ATTRIBUTE_FUNCS( Mass, mass, double )
+    COMMON_ATTRIBUTE_FUNCS( MassMatrix, mass_matrix, osg::Matrix )
+    
+    COMMON_ATTRIBUTE_FUNCS( Matrix, matrix, osg::Matrix )
+    
+    COMMON_ATTRIBUTE_FUNCS( Velocity, velocity, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( AngularVelocity, angular_velocity, osg::Vec3 )
+    
+    COMMON_ATTRIBUTE_FUNCS( Damping, damping, double )
+    COMMON_ATTRIBUTE_FUNCS( AngularDamping, angular_damping, double )
+    
+    COMMON_ATTRIBUTE_FUNCS( DynamicFriction, dynamic_friction, double )
+    COMMON_ATTRIBUTE_FUNCS( StaticFriction, static_friction, double )
+};
+
+}
+
+#endif

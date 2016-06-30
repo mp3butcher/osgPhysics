@@ -1,0 +1,135 @@
+/* -*-c++-*- osgPhysics - Copyright (C) 2009 Wang Rui <wangray84 at gmail dot com>, Sukender suky0001 at free dot fr>
+*
+* This library is free software; you can redistribute it and/or
+* modify it under the terms of the GNU Lesser General Public
+* License as published by the Free Software Foundation; either
+* version 2.1 of the License, or (at your option) any later version.
+
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* Lesser General Public License for more details.
+
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+#ifndef OSGPHYSICS_ELEMENT_
+#define OSGPHYSICS_ELEMENT_
+
+#include <osgPhysics/Utilities>
+#include <osg/Transform>
+
+namespace osgPhysics
+{
+
+class WorldBase;
+class World;
+
+/** The physics element descriptor base class. */
+class OSGPHYSICS_EXPORT ElementBase : public osg::Object
+{
+public:
+    ElementBase()
+    : osg::Object() {}
+    
+    ElementBase( const ElementBase& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY )
+    : osg::Object(copy, copyop) {}
+    
+    META_Object( osgPhysics, ElementBase );
+    
+    /** Set active implementation. */
+    virtual void setActiveImplementation( bool ) {}
+    
+    /** Get active implementation. */
+    virtual bool getActiveImplementation() const { return true; }
+    
+    /** Set global pose implementation. */
+    virtual void setGlobalPoseImplementation( osg::Matrix ) {}
+    
+    /** Get global pose implementation. */
+    virtual osg::Matrix getGlobalPoseImplementation() const { return osg::Matrix::identity(); }
+    
+    /** Set properties implementation. */
+    virtual void setPropertyImplementation( long, const Property & ) {}
+    
+    /** Create implementation. */
+    virtual bool createImplementation( WorldBase* ) { return true; }
+    
+    /** Destroy implementation. */
+    virtual void destroyImplementation( WorldBase* ) {}
+    
+    /** Update implementation. */
+    virtual void updateImplementation( const osg::FrameStamp* ) {}
+    
+protected:
+    virtual ~ElementBase() {}
+};
+
+/** The physics element base class. */
+class OSGPHYSICS_EXPORT Element : public osg::Transform
+{
+public:
+    Element()
+    : osg::Transform() {}
+    
+    Element( const Element& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY )
+    : osg::Transform(copy, copyop) {}
+    
+    virtual bool isSameKindAs( const osg::Object* obj ) const { return dynamic_cast<const Element*>(obj)!=NULL; }
+    virtual const char* libraryName() const { return "osgPhysics"; }
+    virtual const char* className() const { return "Element"; }
+    
+    /** Get if the element is active. */
+    virtual bool getActive() const = 0;
+    
+    /** Set global position and orientation of the element. */
+    virtual void setGlobalPose( osg::Matrix matrix ) = 0;
+    
+    /** Get global position and orientation of the element. */
+    virtual const osg::Matrix getGlobalPose() const = 0;
+    
+    /** Set various properties of the element. */
+    virtual void setProperty( long propID, const Property & prop ) = 0;
+    
+    /** Use a physics world to construct the element. */
+    virtual bool createByWorld( World* ) = 0;
+    
+    /** Use a physics world to destroy the element. */
+    virtual void destroyByWorld( World* ) = 0;
+    
+    /** Get base of the element. */
+    virtual ElementBase* getBase() = 0;
+    virtual const ElementBase* getBase() const = 0;
+    
+    /** Update function to be called at every frame. */
+    virtual void update( const osg::FrameStamp* ) = 0;
+    
+    virtual void traverse( osg::NodeVisitor& nv )
+    {
+        if ( nv.getVisitorType()==osg::NodeVisitor::CULL_VISITOR )
+        {
+#ifndef USE_OSGPHYSICS_THREADING
+            update( nv.getFrameStamp() );
+#endif
+        }
+        osg::Transform::traverse( nv );
+    }
+    
+    virtual bool computeLocalToWorldMatrix( osg::Matrix& matrix, osg::NodeVisitor* nv ) const
+    { return Transform::computeLocalToWorldMatrix(matrix, nv); }
+    
+    virtual bool computeWorldToLocalMatrix( osg::Matrix& matrix, osg::NodeVisitor* nv ) const
+    { return Transform::computeWorldToLocalMatrix(matrix, nv); }
+    
+    virtual osg::BoundingSphere computeBound() const
+    { return Transform::computeBound(); }
+    
+protected:
+    virtual ~Element() {}
+};
+
+}
+
+#endif

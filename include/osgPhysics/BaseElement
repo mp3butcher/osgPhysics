@@ -1,0 +1,130 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_BASEELEMENT
+#define OSGPHYSICS_BASEELEMENT 1
+
+#include <osg/Node>
+#include <osg/ShapeDrawable>
+#include <osgPhysics/PhysicsAttribute>
+
+namespace osgPhysics {
+
+class RigidElement;
+class SoftBodyElement;
+class ClothElement;
+class World;
+
+/** The basic element of the physics abstract layer */
+class OSGPHYSICS_EXPORT BaseElement : public osg::NodeCallback
+{
+public:
+    BaseElement();
+    BaseElement( const BaseElement& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    
+    virtual bool isSameKindAs( const osg::Object* obj ) const { return dynamic_cast<const BaseElement*>(obj)!=NULL; }
+    virtual const char* libraryName () const { return "osgPhysics"; }
+    virtual const char* className () const { return "BaseElement"; }
+    
+    virtual RigidElement* asRigidElement() { return NULL; }
+    virtual const RigidElement* asRigidElement() const { return NULL; }
+    
+    virtual SoftBodyElement* asSoftBodyElement() { return NULL; }
+    virtual const SoftBodyElement* asSoftBodyElement() const { return NULL; }
+    
+    virtual ClothElement* asClothElement() { return NULL; }
+    virtual const ClothElement* asClothElement() const { return NULL; }
+    
+    virtual World* asWorld() { return NULL; }
+    virtual const World* asWorld() const { return NULL; }
+    
+    void setParentElement( BaseElement* parent ) { _parent = parent; }
+    BaseElement* getParentElement() { return _parent.get(); }
+    const BaseElement* getParentElement() const { return _parent.get(); }
+    
+    void setShape( osg::Shape* shape ) { _shape = shape; setComputeShapeType(USE_SHAPE_OBJECT); }
+    osg::Shape* getShape() { return _shape.get(); }
+    const osg::Shape* getShape() const { return _shape.get(); }
+    
+    void setAttributeMap( PhysicsAttribute* attr ) { _attribute = attr; }
+    PhysicsAttribute* getAttributeMap() { return _attribute.get(); }
+    const PhysicsAttribute* getAttributeMap() const { return _attribute.get(); }
+    
+    enum ComputeShapeType
+    {
+        USE_SHAPE_OBJECT,
+        USE_CHILD_DRAWABLES,
+        USE_BOUNDING_BOX,
+        USE_BOUNDING_SPHERE
+    };
+    void setComputeShapeType( ComputeShapeType type ) { _computeShapeType = type; }
+    ComputeShapeType getComputeShapeType() const { return _computeShapeType; }
+    
+    enum BodyType { STATIC_BODY, DYNAMIC_BODY };
+    void setBodyType( BodyType type ) { _bodyType = type; }
+    BodyType getBodyType() const { return _bodyType; }
+    
+    void setActive( bool b ) { _active = b; }
+    bool getActive() const { return _active; }
+    
+    enum DirtyPartType
+    {
+        DIRTY_SHAPE = 0x1,
+        DIRTY_PARAMETERS = 0x2,
+        DIRTY_ALL = DIRTY_SHAPE|DIRTY_PARAMETERS,
+        RECREATE_ELEMENT = 0x8000
+    };
+    void dirty( int d=DIRTY_ALL ) { _dirtyParts = d; }
+    int getDirtyParts() const { return _dirtyParts; }
+    
+    template<typename T>
+    void setPhysicsData( T* data ) { _privateData = static_cast<void*>(data); } 
+    
+    template<typename T>
+    T* getPhysicsData() { return static_cast<T*>(_privateData); }
+    
+    void clearPhysicsData() { _privateData = NULL; }
+    
+    /** Reallocate the element for the first time or it's dirty */
+    virtual void reallocate( osg::Node* node, osg::NodeVisitor* nv, bool recreated=false ) = 0;
+    
+    /** Update the element */
+    virtual void update( osg::Node* node, osg::NodeVisitor* nv ) = 0;
+    
+    /** Do some post work if required */
+    virtual void postevent( osg::Node* node, osg::NodeVisitor* nv ) {}
+    
+    virtual void operator()( osg::Node* node, osg::NodeVisitor* nv );
+    
+protected:
+    virtual ~BaseElement();
+    
+    osg::observer_ptr<BaseElement> _parent;
+    osg::observer_ptr<osg::Node> _parentNode;
+    
+    osg::ref_ptr<osg::Shape> _shape;
+    osg::ref_ptr<PhysicsAttribute> _attribute;
+    ComputeShapeType _computeShapeType;
+    BodyType _bodyType;
+    int _dirtyParts;
+    bool _initParentElement;
+    bool _active;
+    
+private:
+    void* _privateData;
+};
+
+}
+
+#endif

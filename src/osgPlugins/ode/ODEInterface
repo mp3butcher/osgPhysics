@@ -1,0 +1,105 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_ODEINTERFACE
+#define OSGPHYSICS_ODEINTERFACE 1
+
+#include <osgDB/Options>
+#include <osgPhysics/ComputeTrianglesVisitor>
+#include <osgPhysics/BaseElement>
+#include <osgPhysics/Joint>
+#include <osgPhysics/AbstractInterface>
+
+#include <ode/ode.h>
+
+namespace osgPhysics {
+
+struct InternalODEWorld
+{
+    InternalODEWorld()
+    : worldID(0), spaceID(0) {}
+    
+    dWorldID worldID;
+    dSpaceID spaceID;
+};
+
+struct InternalODEGeom
+{
+    InternalODEGeom()
+    :   geomID(0), bodyID(0), mass(0.0),
+        triMeshDataID(0), triMeshVertices(0), triMeshIndices(0)
+    {}
+    
+    dGeomID geomID;
+    dBodyID bodyID;
+    double mass;
+    dMatrix3 massRotation;
+    
+    dTriMeshDataID triMeshDataID;
+    dReal* triMeshVertices;
+    dTriIndex* triMeshIndices;
+};
+
+struct InternalODEJoint
+{
+    InternalODEJoint()
+    : jointID(0), worldID(0) {}
+    
+    dJointID jointID;
+    dWorldID worldID;
+};
+
+/** The abstract physics interface, which should be re-implemented by certain engine */
+class ODEInterface : public AbstractInterface
+{
+public:
+    ODEInterface();
+    ODEInterface( const ODEInterface& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, ODEInterface );
+    
+    static dGeomID createTriangleMesh( InternalODEWorld* world, InternalODEGeom* geom,
+                                       osg::Vec3Array* vertices, osg::UIntArray* indices );
+    
+protected:
+    virtual ~ODEInterface();
+    
+    virtual bool createWorldImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createRigidBodyImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual bool resetElementImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool resetJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void getBodyResultImplementation( BaseElement* element, PhysicsResult& result );
+    
+    virtual bool releaseElementImplementation( BaseElement* element );
+    
+    virtual bool releaseJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void simulateImplementation( double step, BaseElement* world=0 );
+    
+    bool applyWorldParameters( InternalODEWorld* world, PhysicsAttribute* attr );
+    bool applyRigidParameters( InternalODEWorld* world, InternalODEGeom* geom, PhysicsAttribute* attr );
+    bool applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node,
+                          InternalODEWorld* world, InternalODEGeom* geom );
+    bool applyJointParameters( InternalODEJoint* joint, JointAttribute* attr,
+                               InternalODEGeom* geom1, InternalODEGeom* geom2 );
+};
+
+}
+
+#endif

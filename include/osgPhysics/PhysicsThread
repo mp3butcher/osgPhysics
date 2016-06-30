@@ -1,0 +1,52 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_PHYSICSTHREAD
+#define OSGPHYSICS_PHYSICSTHREAD 1
+
+#include <OpenThreads/Thread>
+#include <osg/Referenced>
+#include <osgPhysics/Export>
+
+namespace osgPhysics {
+
+class AbstractInterface;
+
+/** The independent thread for simulating physics worlds */
+class OSGPHYSICS_EXPORT PhysicsThread : public osg::Referenced, OpenThreads::Thread
+{
+public:
+    PhysicsThread();
+    
+    void setPhysicsEngine( AbstractInterface* engine ) { _engine = engine; }
+    AbstractInterface* getPhysicsEngine() { return _engine.get(); }
+    const AbstractInterface* getPhysicsEngine() const { return _engine.get(); }
+    
+    /** The simulation loop */
+    virtual void run();
+    
+    /** Cancel the thread */
+    virtual int cancel();
+    
+protected:
+    virtual ~PhysicsThread();
+    
+    osg::observer_ptr<AbstractInterface> _engine;
+    OpenThreads::Mutex _mutex;
+    bool _done;
+};
+
+}
+
+#endif

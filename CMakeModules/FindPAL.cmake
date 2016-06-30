@@ -1,0 +1,43 @@
+FIND_PATH(PAL_INCLUDE_DIR
+  NAMES pal/pal.h
+  HINTS
+  $ENV{PALDIR}
+  $ENV{PAL_DIR}
+  $ENV{PAL_PATH}
+  $ENV{PALROOT}
+  PATHS
+  /usr/include
+  /usr/local/include
+  /usr/include/pal
+  /usr/local/include/pal
+)
+
+FIND_LIBRARY(PAL_LIBRARY
+  NAMES libpal pal
+  HINTS
+  $ENV{PALDIR}
+  $ENV{PAL_DIR}
+  $ENV{PAL_PATH}
+  $ENV{PALROOT}
+  PATH_SUFFIXES lib lib/release
+  PATHS
+  /usr
+  /usr/local
+)
+
+FIND_LIBRARY(PAL_LIBRARY_DEBUG
+  NAMES libpald pald
+  HINTS
+  $ENV{PALDIR}
+  $ENV{PAL_DIR}
+  $ENV{PALROOT}
+  PATH_SUFFIXES lib lib/debug
+  PATHS
+  /usr
+  /usr/local
+)
+
+SET(PAL_FOUND "NO")
+IF(PAL_INCLUDE_DIR AND PAL_LIBRARY AND PAL_LIBRARY_DEBUG)
+  SET(PAL_FOUND "YES")
+ENDIF(PAL_INCLUDE_DIR AND PAL_LIBRARY AND PAL_LIBRARY_DEBUG)

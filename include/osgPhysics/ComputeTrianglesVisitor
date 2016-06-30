@@ -1,0 +1,59 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_COMPUTETRIANGLESVISITOR
+#define OSGPHYSICS_COMPUTETRIANGLESVISITOR 1
+
+#include <osg/Array>
+#include <osg/Drawable>
+#include <osg/Geode>
+#include <osg/Transform>
+#include <osg/NodeVisitor>
+#include <osgPhysics/Export>
+
+namespace osgPhysics {
+
+/** The triangles collector which taverse a node and get its mesh data.
+    Some implementations here are borrowed from the osgBullet project (http://code.google.com/p/osgbullet/)
+ */
+class OSGPHYSICS_EXPORT ComputeTrianglesVisitor : public osg::NodeVisitor
+{
+public:
+    ComputeTrianglesVisitor( TraversalMode mode=TRAVERSE_ALL_CHILDREN );
+    META_NodeVisitor(osgPhysics, ComputeTrianglesVisitor)
+    
+    osg::Vec3Array* getVertexArray() { return _vertices.get(); }
+    osg::Vec3Array* getNormalArray() { return _normal.get(); };
+    osg::UIntArray* getIndexArray() { return _indices.get(); }
+    
+    void reset();
+    
+    virtual void apply( osg::Node& node ) { traverse(node); }
+    virtual void apply( osg::Transform& node );
+    virtual void apply( osg::Geode& node );
+    
+    virtual void applyDrawable( osg::Drawable* drawable );
+    
+protected:
+    typedef std::vector<osg::Matrix> MatrixStack;
+    MatrixStack _matrixStack;
+    
+    osg::ref_ptr<osg::Vec3Array> _vertices;
+    osg::ref_ptr<osg::Vec3Array> _normal;
+    osg::ref_ptr<osg::UIntArray> _indices;
+};
+
+}
+
+#endif

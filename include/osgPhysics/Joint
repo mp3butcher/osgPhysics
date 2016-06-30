@@ -1,0 +1,157 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_JOINT
+#define OSGPHYSICS_JOINT 1
+
+#include <osg/Node>
+#include <osgPhysics/BaseElement>
+
+namespace osgPhysics {
+
+/** The joint attribute map */
+class OSGPHYSICS_EXPORT JointAttribute : public PhysicsAttribute
+{
+public:
+    enum Type
+    {
+        UNKNOWN_JOINT = 0,
+        FIXED_JOINT,
+        BALL_JOINT,
+        HINGE_JOINT,
+        SLIDER_JOINT,
+        PISTON_JOINT,
+        UNIVERSAL_JOINT
+    };
+    virtual Type getType() const { return UNKNOWN_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( MaxForce, max_force, double )
+    COMMON_ATTRIBUTE_FUNCS( MaxTorque, max_torque, double )
+};
+
+/** Attribute class to create a joint with no remaining degrees of freedom */
+class OSGPHYSICS_EXPORT FixedJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return FIXED_JOINT; }
+};
+
+/** Attribute class to create a ball and socket joint */
+class OSGPHYSICS_EXPORT BallJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return BALL_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( Anchor, anchor, osg::Vec3 )
+};
+
+/** Attribute class to create a door hinge like joint */
+class OSGPHYSICS_EXPORT HingeJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return HINGE_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( Anchor, anchor, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( Axis, axis, osg::Vec3 )
+};
+
+/** Attribute class to create a slider joint permitting only translations along an axis */
+class OSGPHYSICS_EXPORT SliderJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return SLIDER_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( Axis, axis, osg::Vec3 )
+};
+
+/** Attribute class to create a piston joint permitting translations and rotations along an axis */
+class OSGPHYSICS_EXPORT PistonJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return PISTON_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( Anchor, anchor, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( Axis, axis, osg::Vec3 )
+};
+
+/** Attribute class to create a universal joint with 2 rotational degrees of freedom */
+class OSGPHYSICS_EXPORT UniversalJointAttribute : public JointAttribute
+{
+public:
+    virtual Type getType() const { return UNIVERSAL_JOINT; }
+    
+    COMMON_ATTRIBUTE_FUNCS( Anchor, anchor, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( FirstAxis, axis1, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( SecondAxis, axis2, osg::Vec3 )
+};
+
+/** The joint container class */
+class OSGPHYSICS_EXPORT Joint : public osg::Object
+{
+public:
+    typedef JointAttribute::Type JointType;
+    
+    Joint();
+    Joint( JointType type, osg::Node* node1, osg::Node* node2 );
+    Joint( const Joint& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, Joint );
+    
+    bool valid() const
+    { return _element1.valid() && _element2.valid() && _attribute.valid(); }
+    
+    void setElement1( BaseElement* e ) { _element1 = e; }
+    BaseElement* getElement1() { return _element1.get(); }
+    const BaseElement* getElement1() const { return _element1.get(); }
+    
+    void setElement2( BaseElement* e ) { _element2 = e; }
+    BaseElement* getElement2() { return _element2.get(); }
+    const BaseElement* getElement2() const { return _element2.get(); }
+    
+    bool attachNodes( osg::Node* node1, osg::Node* node2 );
+    
+    void setAttributeMap( JointAttribute* attr ) { _attribute = attr; }
+    JointAttribute* getAttributeMap() { return _attribute.get(); }
+    const JointAttribute* getAttributeMap() const { return _attribute.get(); }
+    
+    void setInitialized( bool b ) { _initialized = b; }
+    bool isInitialized() const { return _initialized; }
+    
+    void dirty( bool makeDirty=true ) { _dirty = makeDirty; }
+    bool isDirty() const { return _dirty; }
+    
+    template<typename T>
+    void setPhysicsData( T* data ) { _privateData = static_cast<void*>(data); } 
+    
+    template<typename T>
+    T* getPhysicsData() { return static_cast<T*>(_privateData); }
+    
+    void clearPhysicsData() { _privateData = NULL; }
+    
+protected:
+    virtual ~Joint();
+    
+    osg::observer_ptr<BaseElement> _element1;
+    osg::observer_ptr<BaseElement> _element2;
+    
+    osg::ref_ptr<JointAttribute> _attribute;
+    bool _initialized;
+    bool _dirty;
+    
+private:
+    void* _privateData;
+};
+
+}
+
+#endif

@@ -1,0 +1,42 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_UTILITIES
+#define OSGPHYSICS_UTILITIES 1
+
+#include <osg/Vec3>
+#include <osg/Plane>
+#include <osg/ShapeDrawable>
+#include <osg/Group>
+#include <osgPhysics/Export>
+
+namespace osgPhysics {
+
+class BaseElement;
+class RigidElement;
+class World;
+
+OSGPHYSICS_EXPORT osg::Node* createStaticGround( const osg::Plane& plane, const osg::Vec3& pos, RigidElement** ptr=0 );
+OSGPHYSICS_EXPORT osg::Node* createDynamicShape( osg::Shape* shape, const osg::Vec3& pos, const osg::Vec3& vel=osg::Vec3(),
+                                                 double mass=1.0, RigidElement** ptr=0 );
+OSGPHYSICS_EXPORT osg::Group* createWorld( const osg::Vec3& gravity=osg::Vec3(0.0f, 0.0f, -9.81f), World** ptr=0 );
+
+OSGPHYSICS_EXPORT osg::Node* getOrCreateDynamicBody( osg::Node* node, const osg::Vec3& pos, const osg::Vec3& vel=osg::Vec3(),
+                                                     double mass=1.0, RigidElement** ptr=0 );
+
+OSGPHYSICS_EXPORT BaseElement* getPhysicalCallback( osg::Node* node );
+
+}
+
+#endif

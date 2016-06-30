@@ -1,0 +1,21 @@
+osgPhysics objectives
+---------------------
+
+1. Support for more plugins: Bullet, Newton, PAL...
+
+2. Supoprt for soft bodies (with an example)
+
+3. Physics updating in a separated thread
+
+4. Physics simulation on terrain and paged nodes
+
+5. Create some more complex examples
+Ideas:
+	- A Newton's cradle (only "good" engines can do it - http://en.wikipedia.org/wiki/Newton's_cradle). The scene is simple but involves complex collisions.
+	- A ragdoll test (a ragdoll falling down in a pit with some obstacles?). PAL already has a ragdoll example.
+	- A moving robot. This involves complex joints hirearchies, joint constraints (joint angular limits for instance), and motors.
+	- An example that shows how to make use of internal physics engines' objects (getPhysicsData()).
+	- An example that shows all possible user interactions in a physics simulation.
+
+6. Improvements, bug fixes and tests...
+

@@ -1,0 +1,81 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_WORLD
+#define OSGPHYSICS_WORLD 1
+
+#include <osg/Node>
+#include <osgPhysics/BaseElement>
+#include <osgPhysics/Joint>
+
+#ifndef USE_REFERENCE_TIME
+#   define USE_REFERENCE_TIME DBL_MAX 
+#endif
+
+namespace osgPhysics {
+
+/** The world attribute map */
+class OSGPHYSICS_EXPORT WorldAttribute : public PhysicsAttribute
+{
+public:
+    COMMON_ATTRIBUTE_FUNCS( Gravity, gravity, osg::Vec3 )
+};
+
+/** The world element of the physics abstract layer */
+class OSGPHYSICS_EXPORT World : public BaseElement
+{
+public:
+    World();
+    World( const World& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, World );
+    
+    virtual World* asWorld() { return this; }
+    virtual const World* asWorld() const { return this; }
+    
+    WorldAttribute* getOrCreateAttributeMap();
+    
+    void setDeltaTime( double t ) { _deltaTime = t; }
+    double getDeltaTime() const { return _deltaTime; }
+    
+    typedef std::vector< osg::ref_ptr<Joint> > JointList;
+    JointList& getJointList() { return _joints; }
+    const JointList& getJointList() const { return _joints; }
+    
+    void addJoint( Joint* joint ) { _joints.push_back(joint); }
+    bool removeJoint( Joint* joint );
+    
+    Joint* getJoint( unsigned int i ) { return _joints.at(i); }
+    const Joint* getJoint( unsigned int i ) const { return _joints.at(i); }
+    unsigned int getNumJoints() const { return _joints.size(); }
+    
+    /** Reallocate the element for the first time or it's dirty */
+    virtual void reallocate( osg::Node* node, osg::NodeVisitor* nv, bool recreated=false );
+    
+    /** Update the element */
+    virtual void update( osg::Node* node, osg::NodeVisitor* nv );
+    
+    /** Set up joints in the post-event */
+    virtual void postevent( osg::Node* node, osg::NodeVisitor* nv );
+    
+protected:
+    virtual ~World();
+    
+    JointList _joints;
+    double _deltaTime;
+    double _prevousReferenceTime;
+};
+
+}
+
+#endif

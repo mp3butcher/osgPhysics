@@ -1,0 +1,99 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_PHYSXINTERFACE
+#define OSGPHYSICS_PHYSXINTERFACE 1
+
+#include <osgDB/Options>
+#include <osgPhysics/ComputeTrianglesVisitor>
+#include <osgPhysics/BaseElement>
+#include <osgPhysics/Joint>
+#include <osgPhysics/AbstractInterface>
+
+#include <NxPhysics.h>
+#include <NxCooking.h>
+#include <NxStream.h>
+
+namespace osgPhysics {
+
+extern void setPhysxInstance( NxPhysicsSDK* sdk );
+extern NxPhysicsSDK* physxInstance();
+extern NxCookingInterface* cookingInstance();
+
+/** The internal data for softbody and cloth */
+struct VerticesData
+{
+    NxVec3* position;
+    NxVec3* normal;
+    NxU32* indicesData;
+    
+    NxU32 maxVertices;
+    NxU32 maxIndices;
+    NxU32 numIndices;
+    NxU32 numParentIndices;
+    NxU32 numVertices;
+    NxU32 lastNumVertices;
+    NxU32 meshDirtyFlags;
+    
+    // NxCloth / NxSoftBody
+    void* actor;
+};
+
+/** The abstract physics interface, which should be re-implemented by certain engine */
+class PhysXInterface : public AbstractInterface
+{
+public:
+    PhysXInterface();
+    PhysXInterface( const PhysXInterface& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, PhysXInterface );
+    
+    static bool createTriangleMesh( NxActorDesc* actor, osg::Vec3Array* vertices, osg::UIntArray* indices );
+    static bool createSoftBodyMesh( const VerticesData& data, NxSoftBodyDesc* body );
+    static bool createVerticesData( NxMeshData& meshData, VerticesData* verticesData,
+                                    osg::Vec3Array* vertices, osg::Vec3Array* normals, osg::UIntArray* indices );
+    static NxScene* findSceneElement( BaseElement* element );
+    static void convertMatrix( const osg::Matrix& mat, NxMat34& nxMat );
+    
+protected:
+    virtual ~PhysXInterface();
+    
+    virtual bool createWorldImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createRigidBodyImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createSoftBodyImplementation( BaseElement* element, osg::Node* node );
+    
+    //virtual bool createClothImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual bool resetElementImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool resetJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void getBodyResultImplementation( BaseElement* element, PhysicsResult& result );
+    
+    virtual bool releaseElementImplementation( BaseElement* element );
+    
+    virtual bool releaseJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void simulateImplementation( double step, BaseElement* world=0 );
+    
+    NxJoint* createSpecifiedJoint( NxScene* scene, JointAttribute* attr, NxActor* actor1, NxActor* actor2 );
+    bool resetRigidElement( BaseElement* element, osg::Node* node );
+};
+
+}
+
+#endif

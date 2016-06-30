@@ -1,0 +1,23 @@
+osgPhysics 0.1.0
+
+-----------------
+Wang Rui <wangray84 at gmail dot com>
+
+    * Project leader
+    * The framework and examples
+    * The ODE support
+    * The PhysX support
+
+Sukender <suky0001 at free dot fr>
+
+    * Project supervisor
+
+Yun Shuai
+
+    * Contributor
+    * The Bullet support
+
+Geng Beilei
+
+    * Contributor
+    * The softbody and cloth support

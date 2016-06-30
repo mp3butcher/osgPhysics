@@ -1,0 +1,81 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Yun Shuai
+
+#ifndef OSGPHYSICS_BULLETINTERFACE
+#define OSGPHYSICS_BULLETINTERFACE
+
+#include <osgDB/Options>
+#include <osgPhysics/ComputeTrianglesVisitor>
+#include <osgPhysics/BaseElement>
+#include <osgPhysics/Joint>
+#include <osgPhysics/AbstractInterface>
+
+#include <btBulletDynamicsCommon.h>
+
+namespace osgPhysics {
+
+
+/** The abstract physics interface, which should be re-implemented by certain engine */
+class BulletInterface : public AbstractInterface
+{
+public:
+    BulletInterface();
+    BulletInterface( const BulletInterface& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, BulletInterface );
+    
+protected:
+    virtual ~BulletInterface();
+    
+    virtual bool createWorldImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createRigidBodyImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool createJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual bool resetElementImplementation( BaseElement* element, osg::Node* node );
+    
+    virtual bool resetJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void getBodyResultImplementation( BaseElement* element, PhysicsResult& result );
+    
+    virtual bool releaseElementImplementation( BaseElement* element );
+    
+    virtual bool releaseJointImplementation( Joint* joint, BaseElement* world );
+    
+    virtual void simulateImplementation( double step, BaseElement* world=0 );
+    
+    bool applyWorldParameters( btDynamicsWorld* world, PhysicsAttribute* attr );
+    bool applyRigidParameters( btDynamicsWorld* world, btRigidBody* body, PhysicsAttribute* attr );
+    bool BulletInterface::applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node,
+                                           btDynamicsWorld* world, btRigidBody* body );
+};
+
+
+class MotionState : public btMotionState
+{
+public:
+    MotionState( /*RigidElement*/osg::MatrixTransform *parent );
+    ~MotionState();
+
+    virtual void getWorldTransform(btTransform& worldTrans ) const;
+    virtual void setWorldTransform( const btTransform& worldTrans );  
+
+protected:
+    //RigidElement *mObject;
+    osg::MatrixTransform *mObject; 
+};
+
+}
+
+#endif  //OSGPHYSICS_BULLETINTERFACE

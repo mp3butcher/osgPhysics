@@ -1,0 +1,115 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Wang Rui & Sukender
+
+#ifndef OSGPHYSICS_ABSTRACTINTERFACE
+#define OSGPHYSICS_ABSTRACTINTERFACE 1
+
+#include <osgDB/Options>
+#include <osgPhysics/PhysicsAttribute>
+
+namespace osgPhysics {
+
+class PhysicsThread;
+class BaseElement;
+class Joint;
+
+/** The physics simulation result of an element */
+struct OSGPHYSICS_EXPORT PhysicsResult
+{
+    osg::Matrix matrix;
+    osg::ref_ptr<osg::Vec3Array> vertices;
+    osg::ref_ptr<osg::Vec3Array> normals;
+};
+
+/** The abstract physics interface, which should be re-implemented by certain engine */
+class OSGPHYSICS_EXPORT AbstractInterface : public osg::Object
+{
+    friend class PhysicsThread;
+public:
+    AbstractInterface();
+    AbstractInterface( const AbstractInterface& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    
+    virtual bool isSameKindAs( const osg::Object* obj ) const { return dynamic_cast<const AbstractInterface*>(obj)!=NULL; }
+    virtual const char* libraryName () const { return "osgPhysics"; }
+    virtual const char* className () const { return "AbstractInterface"; }
+    
+    template<typename T>
+    void setPhysicsData( T* data ) { _privateData = static_cast<void*>(data); } 
+    
+    template<typename T>
+    T* getPhysicsData() { return static_cast<T*>(_privateData); }
+    
+    typedef std::pair<BaseElement*, osg::Node*> ElementAndNode;
+    ElementAndNode findParentElement( osg::Node* node=0 );
+    
+    /** Create a physics world */
+    bool createWorld( BaseElement* element, osg::Node* node );
+    
+    /** Create a rigid body */
+    bool createRigidBody( BaseElement* element, osg::Node* node );
+    
+    /** Create a soft body */
+    bool createSoftBody( BaseElement* element, osg::Node* node );
+    
+    /** Create a cloth */
+    bool createCloth( BaseElement* element, osg::Node* node );
+    
+    /** Create a joint in the world */
+    bool createJoint( Joint* joint, BaseElement* world );
+    
+    /** Reset body/world parameters */
+    bool resetElement( BaseElement* element, osg::Node* node );
+    
+    /** Reset joint parameters in the world */
+    bool resetJoint( Joint* joint, BaseElement* world );
+    
+    /** Get simulation result of a element */
+    PhysicsResult getBodyResult( BaseElement* element );
+    
+    /** Release the body/world from the scene */
+    bool releaseElement( BaseElement* element );
+    
+    /** Reset the joint from the world */
+    bool releaseJoint( Joint* joint, BaseElement* world );
+    
+    /** Do simulating manually */
+    void simulate( double step, BaseElement* world );
+    
+protected:
+    virtual ~AbstractInterface();
+    
+    virtual bool createWorldImplementation( BaseElement* element, osg::Node* node ) { return false; }
+    virtual bool createRigidBodyImplementation( BaseElement* element, osg::Node* node ) { return false; }
+    virtual bool createSoftBodyImplementation( BaseElement* element, osg::Node* node ) { return false; }
+    virtual bool createClothImplementation( BaseElement* element, osg::Node* node ) { return false; }
+    virtual bool createJointImplementation( Joint* joint, BaseElement* world ) { return false; }
+    
+    virtual bool resetElementImplementation( BaseElement* element, osg::Node* node ) = 0;
+    virtual bool resetJointImplementation( Joint* joint, BaseElement* world ) = 0;
+    virtual void getBodyResultImplementation( BaseElement* element, PhysicsResult& result ) = 0;
+    virtual bool releaseElementImplementation( BaseElement* element ) = 0;
+    virtual bool releaseJointImplementation( Joint* joint, BaseElement* world ) = 0;
+    virtual void simulateImplementation( double step, BaseElement* world=0 ) = 0;
+    
+private:
+    void* _privateData;
+};
+
+extern OSGPHYSICS_EXPORT AbstractInterface* loadPhysicsEngine( const std::string& name, const osgDB::Options* options=0 );
+
+extern OSGPHYSICS_EXPORT AbstractInterface* engineInstance();
+
+}
+
+#endif

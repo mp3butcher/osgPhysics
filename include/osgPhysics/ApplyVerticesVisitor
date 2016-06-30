@@ -1,0 +1,47 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Geng BeiLei
+
+#ifndef OSGPHYSICS_ADDLAY_VECTOR_CHANAGE_VISITOR
+#define OSGPHYSICS_ADDLAY_VECTOR_CHANAGE_VISITOR
+
+#include <osg/NodeVisitor>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osgPhysics/AbstractInterface>
+
+namespace osgPhysics
+{
+
+class ApplyVerticesVisitor : public osg::NodeVisitor
+{
+public:
+    ApplyVerticesVisitor( TraversalMode mode=TRAVERSE_ALL_CHILDREN );
+    META_NodeVisitor(osgPhysics, ApplyVerticesVisitor )
+    
+    virtual void reset();
+    virtual void apply( osg::Transform& node );
+    virtual void apply( osg::Geode& node );
+    
+    virtual void applyDrawable( osg::Drawable* drawable );
+    
+    PhysicsResult result;
+    
+protected:
+    typedef std::vector<osg::Matrix> MatrixStack;
+    MatrixStack _matrixStack;
+};
+
+}
+
+#endif

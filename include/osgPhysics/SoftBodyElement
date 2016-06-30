@@ -1,0 +1,102 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
+ *
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * OpenSceneGraph Public License for more details.
+*/
+// Written by Geng BeiLei
+
+#ifndef OSGPHYSICS_SOFTBODY_ELEMENT
+#define OSGPHYSICS_SOFTBODY_ELEMENT
+
+#include <osgPhysics/BaseElement>
+
+namespace osgPhysics
+{
+
+class OSGPHYSICS_EXPORT SoftBodyAttribute : public PhysicsAttribute
+{
+public:
+    enum SoftBodyFlag
+    {
+        SBF_STATIC              = (1<<1),
+        SBF_DISABLE_COLLISION   = (1<<2),
+        SBF_SELFCOLLISION       = (1<<3),
+        SBF_VISUALIZATION       = (1<<4),
+        SBF_GRAVITY             = (1<<5),
+        SBF_VOLUME_CONSERVATION = (1<<6),
+        SBF_DAMPING             = (1<<7),
+        SBF_COLLISION_TWOWAY    = (1<<8),
+        SBF_TEARABLE            = (1<<9),
+        SBF_HARDWARE            = (1<<10),
+        SBF_COMDAMPING          = (1<<11),
+        SBF_VALIDBOUNDS         = (1<<12),
+        SBF_FLUID_COLLISION     = (1<<13),
+        SBF_DISABLE_DYNAMIC_CCD = (1<<14),
+        SBF_ADHERE              = (1<<15),
+    };
+    
+public:
+    COMMON_ATTRIBUTE_FUNCS( Matrix, matrix, osg::Matrix )
+    COMMON_ATTRIBUTE_FUNCS( Density, density, double )
+    COMMON_ATTRIBUTE_FUNCS( Friction, friction, double )
+    COMMON_ATTRIBUTE_FUNCS( TearFactor, tear_factor, double )
+    COMMON_ATTRIBUTE_FUNCS( ValidBoundsMin, valid_bounds_min, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( ValidBoundsMax, valid_bounds_max, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( Flags, flags, unsigned int )
+    
+    COMMON_ATTRIBUTE_FUNCS( ParticleRadius, particle_radius, double )
+    COMMON_ATTRIBUTE_FUNCS( VolumeStiffness, volume_stiffness, double )
+    
+    COMMON_ATTRIBUTE_FUNCS( StretchingStiffness, stretching_stiffness, double )
+    COMMON_ATTRIBUTE_FUNCS( AttachmentResponseCoefficient, attachment_response_coefficient, double )
+    COMMON_ATTRIBUTE_FUNCS( AttachmentTearFactor, attachment_tear_factor, double )
+    COMMON_ATTRIBUTE_FUNCS( ToFluidResponseCoefficient, to_fluid_response_coefficient, double )
+    COMMON_ATTRIBUTE_FUNCS( FromFluidResponseCoefficient, from_fluid_response_coefficient, double )
+    COMMON_ATTRIBUTE_FUNCS( DampingCoefficient, damping_coefficient, double )
+    COMMON_ATTRIBUTE_FUNCS( CollisionResponseCoefficient, collision_response_coefficient, double )
+    COMMON_ATTRIBUTE_FUNCS( MinAdhereVelocity, min_adhere_velocity, double )
+    COMMON_ATTRIBUTE_FUNCS( SolverIterations, solver_iterations, unsigned int )
+    COMMON_ATTRIBUTE_FUNCS( ExternalAcceleration, external_acceleration, osg::Vec3 )
+    COMMON_ATTRIBUTE_FUNCS( WakeUpCounter, wake_up_counter, double )
+    COMMON_ATTRIBUTE_FUNCS( SleepLinearVelocity, sleep_linear_velocity, double )
+    COMMON_ATTRIBUTE_FUNCS( ForceFieldMaterial, force_field_material, unsigned int )
+    COMMON_ATTRIBUTE_FUNCS( RelativeGridSpacing, relative_grid_spacing, double )
+};
+
+class OSGPHYSICS_EXPORT SoftBodyElement : public BaseElement
+{
+public:
+    SoftBodyElement();
+    SoftBodyElement( const SoftBodyElement& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY );
+    META_Object( osgPhysics, SoftBodyElement );
+    
+    virtual SoftBodyElement* asSoftBodyElement() { return this; }
+    virtual const SoftBodyElement* asSoftBodyElement() const { return this; }
+    
+    SoftBodyAttribute* getOrCreateAttributeMap();
+
+    /** Reallocate the element for the first time or it's dirty */
+    virtual void reallocate( osg::Node* node, osg::NodeVisitor* nv, bool recreated=false );
+
+    /** Update the element */
+    virtual void update( osg::Node* node, osg::NodeVisitor* nv );
+
+    void setAttachedElement( BaseElement* element ){ _attachedElement = element; };
+    BaseElement *getAttachedElement(){ return _attachedElement.get(); };
+
+protected:
+    virtual ~SoftBodyElement();
+
+    osg::ref_ptr<BaseElement> _attachedElement;
+};
+
+}
+
+#endif
