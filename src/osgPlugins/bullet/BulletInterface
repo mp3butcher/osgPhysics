@@ -57,7 +57,7 @@ protected:
     
     bool applyWorldParameters( btDynamicsWorld* world, PhysicsAttribute* attr );
     bool applyRigidParameters( btDynamicsWorld* world, btRigidBody* body, PhysicsAttribute* attr );
-    bool BulletInterface::applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node,
+    bool applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node,
                                            btDynamicsWorld* world, btRigidBody* body );
 };
 

@@ -1,13 +1,13 @@
 /* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2011 Robert
  *
- * This library is open source and may be redistributed and/or modified under  
- * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
+ * This library is open source and may be redistributed and/or modified under
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
  * (at your option) any later version.  The full license is in LICENSE file
  * included with this distribution, and on the openscenegraph.org website.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * OpenSceneGraph Public License for more details.
 */
 // Written by Yun Shuai
@@ -26,7 +26,7 @@ static btDynamicsWorld* findSceneElement( BaseElement* element )
     {
         world = element->getParentElement()->getPhysicsData<btDynamicsWorld>();
     }
-    if ( !world ) 
+    if ( !world )
         OSG_WARN << "[BulletInterface] The element doesn't belong to a world" << std::endl;
     return world;
 }
@@ -41,6 +41,11 @@ static btTransform asBtTransform( const osg::Matrix& m )
     btTransform t;
     t.setFromOpenGLMatrix( bPtr );
     return t;
+}
+static btVector3
+asBtVector3( const osg::Vec3& v )
+{
+    return btVector3( v.x(), v.y(), v.z() );
 }
 
 static osg::Matrix asOsgMatrix( const btTransform& t )
@@ -71,7 +76,7 @@ static btBoxShape* btBoxCollisionShapeFromOSG( osg::Node* node, const osg::Bound
 
 MotionState::MotionState( osg::MatrixTransform *parent )
 : mObject(parent)
-{ 
+{
 }
 
 MotionState::~MotionState()
@@ -87,7 +92,7 @@ void MotionState::getWorldTransform(btTransform& worldTrans) const
 
 void MotionState::setWorldTransform(const btTransform& worldTrans)
 {
-    assert (mObject); 
+    assert (mObject);
     mObject->setMatrix( asOsgMatrix(worldTrans) );
 }
 
@@ -110,7 +115,7 @@ bool BulletInterface::createWorldImplementation( BaseElement* element, osg::Node
     if ( !element || !node )
         return false;
 
-    /// 
+    ///
     btDefaultCollisionConfiguration * collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher * dispatcher = new btCollisionDispatcher( collisionConfiguration );
     btConstraintSolver * solver = new btSequentialImpulseConstraintSolver;
@@ -136,18 +141,96 @@ bool BulletInterface::applyWorldParameters( btDynamicsWorld* world, PhysicsAttri
     {
         osg::Vec3 vec;
         if ( attr->getAttribute("gravity", vec) )
-            world->setGravity( btVector3(vec[0], vec[1], vec[2]) ); 
+            world->setGravity( btVector3(vec[0], vec[1], vec[2]) );
     }
     return true;
 }
 
+class   ComputeTriMeshVisitor : public osg::NodeVisitor
+{
+public:
+    ComputeTriMeshVisitor( osg::NodeVisitor::TraversalMode traversalMode = TRAVERSE_ALL_CHILDREN );
+#if( OSGWORKS_OSG_VERSION >= 20800 )
+    META_NodeVisitor(osgbCollision,ComputeTriMeshVisitor);
+#endif
+
+    virtual void reset();
+
+    osg::Vec3Array* getTriMesh()
+    {
+        return( mesh.get() );
+    }
+
+    void apply( osg::Geode & geode );
+
+protected:
+    void applyDrawable( osg::Drawable * drawable );
+
+    osg::ref_ptr< osg::Vec3Array > mesh;
+};
+
+/* \cond */
+struct ComputeTriMeshFunc
+{
+    ComputeTriMeshFunc()
+    {
+        vertices = new osg::Vec3Array;
+
+        vertices->clear();
+    }
+
+    void inline operator()( const osg::Vec3 v1, const osg::Vec3 v2, const osg::Vec3 v3, bool _temp )
+    {
+        vertices->push_back( v1 );
+        vertices->push_back( v2 );
+        vertices->push_back( v3 );
+    }
+
+    osg::ref_ptr< osg::Vec3Array > vertices;
+};
+/* \endcond */
+#include <osg/Transform>
+#include <osg/Drawable>
+#include <osg/Geode>
+#include <osg/PrimitiveSet>
+#include <osg/TriangleFunctor>
+ComputeTriMeshVisitor::ComputeTriMeshVisitor( osg::NodeVisitor::TraversalMode traversalMode )
+    : osg::NodeVisitor( traversalMode )
+{
+    mesh = new osg::Vec3Array;
+}
+
+void ComputeTriMeshVisitor::reset()
+{
+    mesh->clear();
+}
+
+void ComputeTriMeshVisitor::apply( osg::Geode & geode )
+{
+    unsigned int idx;
+    for( idx = 0; idx < geode.getNumDrawables(); idx++ )
+        applyDrawable( geode.getDrawable( idx ) );
+}
+
+void ComputeTriMeshVisitor::applyDrawable( osg::Drawable * drawable )
+{
+    osg::TriangleFunctor< ComputeTriMeshFunc > functor;
+    drawable->accept( functor );
+
+    osg::Matrix m = osg::computeLocalToWorld( getNodePath() );
+    osg::Vec3Array::iterator iter;
+    for( iter = functor.vertices->begin(); iter != functor.vertices->end(); ++iter )
+    {
+        mesh->push_back( *iter * m );
+    }
+}
 bool BulletInterface::createRigidBodyImplementation( BaseElement* element, osg::Node* node )
 {
-    if ( !element || !node ) 
+    if ( !element || !node )
         return false;
 
     btDynamicsWorld* parentWorld = findSceneElement(element);
-    if ( !parentWorld ) 
+    if ( !parentWorld )
         return false;
 
     osg::MatrixTransform *matTrans;
@@ -159,11 +242,39 @@ bool BulletInterface::createRigidBodyImplementation( BaseElement* element, osg::
 
     MotionState * motion = new MotionState( matTrans );  //
     btCollisionShape * collision = btBoxCollisionShapeFromOSG( matTrans );  //
+    ComputeTriMeshVisitor visitor;
+    matTrans->accept( visitor );
+
+    osg::Vec3Array* vertices = visitor.getTriMesh();
+       btCollisionShape* meshShape;
+    if( vertices->size() < 3 )
+    {
+        OSG_WARN<< "osgbCollision::btTriMeshCollisionShapeFromOSG, no triangles found" << std::endl;
+       // return( NULL );
+        meshShape = collision;
+    }else{
+
+    btTriangleMesh* mesh = new btTriangleMesh;
+    for( size_t i = 0; i + 2 < vertices->size(); i += 3 )
+    {
+        osg::Vec3& p1 = ( *vertices )[ i ];
+        osg::Vec3& p2 = ( *vertices )[ i + 1 ];
+        osg::Vec3& p3 = ( *vertices )[ i + 2 ];
+        OSG_WARN<<p1<<" "<<p2<<" "<<p3<<std::endl;
+        mesh->addTriangle( asBtVector3( p1 ),
+            asBtVector3( p2 ), asBtVector3( p3 ) );
+    }
+if(element->getBodyType()== BaseElement::STATIC_BODY )
+
+     meshShape = new btBvhTriangleMeshShape ( mesh, true );
+     else
+     meshShape = new btConvexTriangleMeshShape ( mesh, true );
+
     //osg::Node* debugNode = osgbBullet::osgNodeFromBtCollisionShape( collision );
     //mat->addChild( debugNode );
-
+}
     btRigidBody::btRigidBodyConstructionInfo * rbinfo;
-    btRigidBody * body;
+    btRigidBody * body=0;
     btScalar mass(0.0);  //set a default value to AVOID as initialization error.
     btVector3 inertia;
     osg::Matrix mat;
@@ -173,20 +284,21 @@ bool BulletInterface::createRigidBodyImplementation( BaseElement* element, osg::
     if ( attr )
     {
         double value = 0.0;
-        if ( attr->getAttribute("mass", value) ) 
+        if ( attr->getAttribute("mass", value) )
         {
             mass =btScalar(value);
             collision->calculateLocalInertia( mass, inertia );
         }
 
-        if ( attr->getAttribute("matrix", mat) ) 
+        if ( attr->getAttribute("matrix", mat) )
         {
-            motion->setWorldTransform( asBtTransform( mat ) ); 
+            motion->setWorldTransform( asBtTransform( mat ) );
         }
 
-        rbinfo = new btRigidBody::btRigidBodyConstructionInfo( mass, motion, collision, inertia );
+        rbinfo = new btRigidBody::btRigidBodyConstructionInfo( mass, motion, meshShape, inertia );
         body = new btRigidBody( *rbinfo );
-        if ( attr->getAttribute("velocity", velocity) ) 
+
+        if ( attr->getAttribute("velocity", velocity) )
         {
             body->setLinearVelocity( btVector3( velocity[0], velocity[1], velocity[2] ) );
         }
@@ -195,12 +307,13 @@ bool BulletInterface::createRigidBodyImplementation( BaseElement* element, osg::
         {
             body->setAngularVelocity( btVector3( angular_velocity[0], angular_velocity[1], angular_velocity[2] ) );
         }
-    }
 
+
+if(body){
     parentWorld->addRigidBody( body );  //
 
     element->setPhysicsData( body );
-
+}}
     return true;
 }
 
@@ -209,7 +322,7 @@ bool BulletInterface::applyRigidParameters( btDynamicsWorld* world, btRigidBody*
     return true;
 }
 
-bool BulletInterface::applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node, 
+bool BulletInterface::applyRigidShape( BaseElement::ComputeShapeType type, osg::Shape* shape, osg::Node* node,
                                        btDynamicsWorld* world, btRigidBody* body )
 {
     return true;
@@ -307,6 +420,7 @@ void BulletInterface::simulateImplementation( double step, BaseElement* world )
     if ( btWorld )
     {
         btWorld->stepSimulation( step );
+        OSG_WARN<<"endframe"<<std::endl;
     }
 }
 
